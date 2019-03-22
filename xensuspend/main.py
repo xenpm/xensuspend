@@ -19,8 +19,8 @@
 import pyxs
 import sys
 import time
-from xenstat import xenstat
-from libxl import libxl
+from .xenstat import xenstat
+from .libxl import libxl
 
 def get_domain_ids():
     'Scan xenstore to get list of available domains'
@@ -96,6 +96,8 @@ def main():
             resume_domain(d)
     else:
         print("Unknown command")
+
+    return 0
 
 def suspend_domain(domid, timeout=60):
     if domid == 0:

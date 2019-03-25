@@ -1,15 +1,11 @@
-from setuptools import setup, find_packages
+from distutils.core import setup
 
 setup(name='xensuspend',
       version='0.0.1',
-      packages=find_packages(),
+      packages=['xensuspend'],
       description='Xen system suspend coordinator',
       url='https://github.com/xen-troops/xensuspend',
       license='GPLv2',
       install_requires=["pyxs>=0.3"],
-      entry_points={
-          'console_scripts': [
-                              'xensuspend = xensuspend.main:main',
-                              ]
-            }
+      scripts=['bin/xensuspend']
     )

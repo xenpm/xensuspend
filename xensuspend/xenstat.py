@@ -15,8 +15,9 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 from ctypes import cdll, c_char_p
+from ctypes.util import find_library
 
-xenstatlib = cdll.LoadLibrary("libxenstat.so")
+xenstatlib = cdll.LoadLibrary(find_library("xenstat"))
 xenstatlib.xenstat_domain_name.restype = c_char_p
 
 class xenstat(object):

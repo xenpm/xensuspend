@@ -125,7 +125,7 @@ def resume_domain(domid, timeout=60):
         return
     print("Resuming domain {}".format(domid))
     with libxl() as xl:
-        xl.wake_up(domid)
+        xl.suspend_wakeup(domid)
 
 def suspend_dom0():
     print("echo mem > /sys/power/state")

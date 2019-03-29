@@ -29,11 +29,11 @@ def get_domain_ids():
 
 def get_backends(domid):
     'Get list of backends for a given domain id'
-    ret = []
+    ret = set()
     with pyxs.Client() as c:
         path = "/libxl/{}".format(domid).encode()
         if not c.exists(path):
-            return []
+            return set()
         path = path + b"/device"
         dev_types = c.list(path)
         for dt in dev_types:
@@ -41,7 +41,7 @@ def get_backends(domid):
             for device in devices:
                 dev_path = path + b"/" + dt + b"/" + device
                 frontend_path = c[dev_path + b"/frontend"]
-                ret.append(int(c[frontend_path + b"/backend-id"]))
+                ret.add(int(c[frontend_path + b"/backend-id"]))
     return ret
 
 def build_deps():

@@ -83,21 +83,77 @@ def main():
     print("Suspend order: "+ str(get_suspend_order(deps)))
 
     if len (sys.argv) != 2:
-        print("Use {} suspend to suspend system".format(sys.argv[0]))
+        print("Use {} suspend to suspend the system".format(sys.argv[0]))
+        print("Use {} daemon to start as daemon".format(sys.argv[0]))
         return
 
     if sys.argv[1] == "suspend":
-        for d in get_suspend_order(deps):
-            suspend_domain(d)
-        for d in reversed(get_suspend_order(deps)):
-            resume_domain(d)
+        system_suspend()
     elif sys.argv[1] == "resume":
-        for d in reversed(get_suspend_order(deps)):
-            resume_domain(d)
+        resume()
+    elif sys.argv[1] == "daemon":
+        daemon()
     else:
         print("Unknown command")
 
     return 0
+
+def suspend():
+    deps = build_deps()
+    for d in get_suspend_order(deps):
+        suspend_domain(d)
+
+def resume():
+    deps = build_deps()
+    for d in reversed(get_suspend_order(deps)):
+        resume_domain(d)
+        time.sleep(3)
+
+def format_control_node_path(domain):
+    return "/local/domain/{}/control/system-suspend-req".format(domain).encode()
+
+def setup_control_node(client, domain):
+    path = format_control_node_path(domain)
+    client.mkdir(path)
+    client.set_perms(path, ["w{}".format(domain).encode()])
+
+def daemon():
+    domains = []
+    with pyxs.Client() as c:
+        m = c.monitor()
+        m.watch(b"@introduceDomain", "domain".encode())
+        m.watch(b"@releaseDomain", "domain".encode())
+        while True:
+            path, token = next(m.wait())
+            print("Event: ", path, token)
+            if token.decode() == "domain":
+                domains = on_domains_changed(domains, c, m)
+            else:
+                print("Signal from domain", token)
+                data = (c[path])
+                if data.decode() == "suspend":
+                    system_suspend()
+
+def on_domains_changed(old_domains, client, monitor):
+    domains = get_domain_ids()
+    added = set(domains) - set(old_domains)
+    removed = set(old_domains) - set(domains)
+    print("Old domains:", old_domains)
+    print("New domains:", domains)
+    print("Added:", added)
+    print("Removed", removed)
+
+    for d in added:
+        setup_control_node(client, d)
+        monitor.watch(format_control_node_path(d), str(d).encode())
+
+    for d in removed:
+        monitor.unwatch(format_control_node_path(d), str(d).encode())
+    return domains
+
+def system_suspend():
+    suspend()
+    resume()
 
 def suspend_domain(domid, timeout=60):
     if domid == 0:

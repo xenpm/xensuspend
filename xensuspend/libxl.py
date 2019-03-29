@@ -17,7 +17,7 @@
 from ctypes import cdll, c_char_p, c_int, c_void_p, byref
 from ctypes.util import find_library
 
-libxenlight = cdll.LoadLibrary(find_library("xenligth"))
+libxenlight = cdll.LoadLibrary(find_library("xenlight"))
 
 class libxl(object):
     def __enter__(self):

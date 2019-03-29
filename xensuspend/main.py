@@ -107,18 +107,17 @@ def suspend_domain(domid, timeout=60):
     with libxl() as xl:
         xl.suspend_trigger(domid)
 
-    with xenstat() as xs:
-        dom = xs.domain(domid)
-        name = dom.name()
-        while timeout > 0:
-            print("Waiting {} to suspend, {} seconds left".format(name, timeout))
-            if dom.paused():
+    while timeout > 0:
+        with xenstat() as xs:
+            dom = xs.domain(domid)
+            print("Waiting {} to suspend, {} seconds left".format(dom.name(), timeout))
+            if dom.shutdown():
                 break
             time.sleep(1)
             timeout -= 1
-            break
-        if dom.running():
-            raise Exception("Failed to suspend domain {} ({})".format(name, domid))
+
+    if timeout == 0:
+        raise Exception("Failed to suspend domain {}".format(domid))
 
 def resume_domain(domid, timeout=60):
     if domid == 0:

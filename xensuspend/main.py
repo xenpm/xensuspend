@@ -16,9 +16,13 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
+import daemon
+import lockfile
+import os
 import pyxs
 import sys
 import time
+
 from .xenstat import xenstat
 from .libxl import libxl
 
@@ -92,7 +96,11 @@ def main():
     elif sys.argv[1] == "resume":
         resume()
     elif sys.argv[1] == "daemon":
-        daemon()
+        print("Forking")
+        if os.fork() != 0:
+            return 0
+        with daemon.DaemonContext(pidfile=lockfile.FileLock('/var/run/xensuspend.pid')):
+            serve()
     else:
         print("Unknown command")
 
@@ -117,7 +125,7 @@ def setup_control_node(client, domain):
     client.mkdir(path)
     client.set_perms(path, ["w{}".format(domain).encode()])
 
-def daemon():
+def serve():
     domains = []
     with pyxs.Client() as c:
         m = c.monitor()

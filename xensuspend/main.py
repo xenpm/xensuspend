@@ -121,8 +121,11 @@ def format_control_node_path(domain):
 
 def setup_control_node(client, domain):
     path = format_control_node_path(domain)
+    client.transaction()
     client.mkdir(path)
-    client.set_perms(path, ["w{}".format(domain).encode()])
+    client.set_perms(path, ["w{}".format(domain).encode(), b"b0"])
+    client.write(path, b" ")
+    client.commit()
 
 def serve():
     domains = []

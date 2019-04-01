@@ -16,9 +16,9 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
+import argparse
 import daemon
-import lockfile
-import os
+import daemon.pidfile
 import pyxs
 import sys
 import time
@@ -82,27 +82,26 @@ def get_suspend_order(deps):
     return ret
 
 def main():
-    deps = build_deps()
-    print("Domain dependencies: " + str(deps))
-    print("Suspend order: "+ str(get_suspend_order(deps)))
+    parser = argparse.ArgumentParser()
+    parser.add_argument("command", choices = ["suspend", "daemon"], help = "Action to perform. Use 'daemon' to run as a daemon")
+    parser.add_argument("-f", "--foreground", action = 'store_true', help = "Run daemon in foreground (do not fork)")
+    parser.add_argument("-v", "--verbose", action = 'store_true', help = "Print logs to stdout and errors to stderr")
+    parser.add_argument("--pidfile", action = 'store', help = "Path to PID file", default = "/var/run/xensuspend.pid")
+    args = parser.parse_args()
 
-    if len (sys.argv) != 2:
-        print("Use {} suspend to suspend the system".format(sys.argv[0]))
-        print("Use {} daemon to start as daemon".format(sys.argv[0]))
-        return
-
-    if sys.argv[1] == "suspend":
+    if args.command == "suspend":
         system_suspend()
-    elif sys.argv[1] == "resume":
-        resume()
-    elif sys.argv[1] == "daemon":
-        print("Forking")
-        if os.fork() != 0:
-            return 0
-        with daemon.DaemonContext(pidfile=lockfile.FileLock('/var/run/xensuspend.pid')):
+    elif args.command == "daemon":
+        detach = None
+        if args.foreground:
+            detach = False
+
+        stdout = sys.stdout if args.verbose else None
+        stderr = sys.stderr if args.verbose else None
+        pidfile = daemon.pidfile.PIDLockFile(args.pidfile)
+
+        with daemon.DaemonContext(pidfile = pidfile, stdout = stdout, stderr = stderr, detach_process = detach):
             serve()
-    else:
-        print("Unknown command")
 
     return 0
 
